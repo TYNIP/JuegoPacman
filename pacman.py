@@ -31,8 +31,8 @@ tiles = [
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
     0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0,
     0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0,
-    0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ]
@@ -44,11 +44,9 @@ def square(x, y):
     path.goto(x, y)
     path.down()
     path.begin_fill()
-
     for count in range(4):
         path.forward(20)
         path.left(90)
-
     path.end_fill()
 
 def offset(point):
@@ -61,34 +59,27 @@ def offset(point):
 def valid(point):
     "Return True if point is valid in tiles."
     index = offset(point)
-
     if tiles[index] == 0:
         return False
-
     index = offset(point + 19)
-
     if tiles[index] == 0:
         return False
-
     return point.x % 20 == 0 or point.y % 20 == 0
 
 def world():
     "Draw world using path."
     bgcolor('black')
     path.color('blue')
-
     for index in range(len(tiles)):
         tile = tiles[index]
-
         if tile > 0:
             x = (index % 20) * 20 - 200
             y = 180 - (index // 20) * 20
             square(x, y)
-
-            if tile == 1:
-                path.up()
-                path.goto(x + 10, y + 10)
-                path.dot(2, 'white')
+        if tile == 1:
+            path.up()
+            path.goto(x + 10, y + 10)
+            path.dot(2, 'white')
 
 def move():
     "Move pacman and all ghosts."
@@ -101,7 +92,6 @@ def move():
         pacman.move(aim)
 
     index = offset(pacman)
-
     if tiles[index] == 1:
         tiles[index] = 2
         state['score'] += 1
@@ -113,6 +103,7 @@ def move():
     goto(pacman.x + 10, pacman.y + 10)
     dot(20, 'yellow')
 
+    # Smart ghost logic
     for point, course in ghosts:
         if valid(point + course):
             point.move(course)
@@ -124,9 +115,29 @@ def move():
                 vector(0, 10),
                 vector(0, -10),
             ]
-            plan = choice(options)
-            course.x = plan.x
-            course.y = plan.y
+            
+            #  Ghost cannot go back to itself 
+            options = [o for o in options if (o.x != -course.x or o.y != -course.y)]
+            
+            best_plan = None
+            min_distance = float('inf')
+
+            for plan in options:
+                new_pos = point + plan
+                if valid(new_pos):
+                    distance = abs(pacman - new_pos)
+                    if distance < min_distance:
+                        min_distance = distance
+                        best_plan = plan
+
+            # If there's a path toward pacman take it, otherwise again go to random.
+            if best_plan:
+                course.x = best_plan.x
+                course.y = best_plan.y
+            else:
+                plan = choice(options)
+                course.x = plan.x
+                course.y = plan.y
 
         up()
         goto(point.x + 10, point.y + 10)
