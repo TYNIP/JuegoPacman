@@ -1,3 +1,4 @@
+# Juego Pacman
 El repositorio contiene el archivo pacman.py, en donde se encuentra el juego de JPacman.
 
 Los cambios que realizaron fueron 3 en concreto:
